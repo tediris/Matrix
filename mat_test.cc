@@ -1,6 +1,7 @@
 #include "./matrix.h"
 #include <iostream>
 #include "./linsolver.h"
+#include <vector>
 using namespace std;
 
 int main() {
@@ -15,7 +16,14 @@ int main() {
 	A.set(2, 1, 1.0);
 	A.set(2, 2, 2.0);
 
-	//cout << A << endl;
+	//cout << "A[0][2]: " << A[0][2] << endl;
+
+	int colsToExtract[] = {0, 1};
+	Matrix<float> shrunk = A.extractColumns(colsToExtract, sizeof(colsToExtract) / sizeof(colsToExtract[0]));
+	//cout << shrunk << endl;
+
+	float firstCol[A.getRows()] = {};
+	A.getColumn(firstCol, 0);
 
 	Matrix<float> b(3, 1);
 	b.set(0, 0, -8.0);
@@ -29,5 +37,5 @@ int main() {
 
 	Matrix<float> result = LSolve::GaussianElim(A, b);
 	cout << result << endl;
-	
+
 }

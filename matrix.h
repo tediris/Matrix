@@ -18,6 +18,7 @@ public:
 	T* getValues() const;
 	T get(int row, int col);
 	void set(int row, int col, T value);
+	Matrix<T> transpose();
 	void scaleRow(int row, int scale);
 	void scaleRow(int row, float scale);
 	void scaleRow(int row, double scale);
@@ -26,6 +27,8 @@ public:
 	void scaleAddRows(int row1, int scale, int row2); //stores in row2
 	void scaleAddRows(int row1, float scale, int row2); //stores in row2
 	void scaleAddRows(int row1, double scale, int row2); //stores in row2
+	Matrix<T> extractColumns(int colsToExtract[], size_t size);
+	void getColumn(T* buf, int col);
 	Matrix<T> operator+(Matrix<T>& mat);
 	Matrix<T> operator-(Matrix<T>& mat);
 	std::string toString();
@@ -33,9 +36,10 @@ public:
 	Matrix<T> operator*(float value);
 	Matrix<T> operator*(double value);
 	Matrix<T> operator*(Matrix<T>& mat);
+	T* operator[](int index); // effectively a get row
 	template <class U>
 	friend std::ostream& operator<<(std::ostream& os, Matrix<U>& mat);
-    
+
 
 private:
 	int rows;
@@ -48,7 +52,7 @@ Matrix<T>::Matrix(int rows, int cols) {
 	this->rows = rows;
 	this->cols = cols;
 	this->values = new T[rows * cols];
-} 
+}
 
 
 template <class T>
@@ -57,16 +61,8 @@ Matrix<T>::Matrix(const Matrix<T>& mat) {
 	this->cols = mat.cols;
 	this->values = new T[rows * cols];
 	std::memcpy(this->getValues(), mat.getValues(), sizeof(T) * this->rows * this->cols);
-} 
-/*
-template <class T>
-Matrix<T>::Matrix(Matrix<T> mat) {
-	this->rows = mat.rows;
-	this->cols = mat.cols;
-	this->values = new T[rows * cols];
-	std::memcpy(mat.getValues(), this->values, sizeof(this->values));
-} 
-*/
+}
+
 template <class T>
 Matrix<T>& Matrix<T>::operator=(const Matrix<T>& mat) {
 	this->rows = mat.rows;
@@ -75,18 +71,8 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& mat) {
 	std::memcpy(this->getValues(), mat.getValues(), sizeof(T) * this->rows * this->cols);
 
 	return *this;
-} 
-/*
-template <class T>
-Matrix<T> Matrix<T>::operator=(Matrix<T> mat) {
-	this->rows = mat.rows;
-	this->cols = mat.cols;
-	this->values = new T[rows * cols];
-	std::memcpy(mat.getValues(), this->values, sizeof(this->values));
+}
 
-	return *this;
-} 
-*/
 template <class T>
 Matrix<T>::~Matrix() {
 	delete [] values;
@@ -118,6 +104,17 @@ void Matrix<T>::set(int row, int col, T value) {
 }
 
 template <class T>
+Matrix<T> Matrix<T>::transpose() {
+	Matrix<T> result(this->getCols(), this->getRows());
+	for (int i = 0; i < this->getRows(); i++) {
+		for (int j = 0; j < this->getCols(); j++) {
+			result.set(j, i, this->get(i ,j));
+		}
+	}
+	return result;
+}
+
+template <class T>
 void Matrix<T>::addRows(int row1, int row2) {
 	for (int col = 0; col < this->cols; col++) {
 		values[row2 * this->cols + col] += values[row1 * this->cols + col];
@@ -146,6 +143,25 @@ void Matrix<T>::scaleAddRows(int row1, double scale, int row2) {
 }
 
 template <class T>
+Matrix<T> Matrix<T>::extractColumns(int colsToExtract[], size_t size) {
+	Matrix<T> result(this->getRows(), size);
+	for (size_t i = 0; i < size; i++) {
+		for (int row = 0; row < this->getRows(); row++) {
+			result.set(row, i, this->get(row, colsToExtract[i]));
+		}
+	}
+
+	return result;
+}
+
+template <class T>
+void Matrix<T>::getColumn(T* buf, int col) {
+	for (int i = 0; i < this->getRows(); i++) {
+		buf[i] = this->get(i, col);
+	}
+}
+
+template <class T>
 void Matrix<T>::swapRows(int row1, int row2) {
 	for (int col = 0; col < this->cols; col++) {
 		T temp = values[row2 * this->cols + col];
@@ -158,7 +174,7 @@ void Matrix<T>::swapRows(int row1, int row2) {
 template <class T>
 void Matrix<T>::scaleRow(int row, int scale) {
 	for (int col = 0; col < this->cols; col++) {
-		//values[row * this->cols + col] = values[row * this->cols + col] * scale; 
+		//values[row * this->cols + col] = values[row * this->cols + col] * scale;
 		// maybe this is more efficient?
 		this->set(row, col, this->get(row, col) * scale);
 	}
@@ -283,6 +299,11 @@ Matrix<T> operator*(float i, Matrix<T>& mat) {
 template <class T>
 Matrix<T> operator*(double i, Matrix<T>& mat) {
 	return mat * i;
+}
+
+template <class T>
+T* Matrix<T>::operator[](int index) {
+	return (this->values + index * this->getCols());
 }
 
 template <class U>
